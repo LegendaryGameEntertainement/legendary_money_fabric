@@ -7,7 +7,7 @@ local config = {
     requiredPaper = 2,  -- Nombre de papiers requis pour démarrer la production
     productionTime = 10, -- Temps en secondes pour produire l'entité finale
     paperEntity = "lg_paper", -- Nom de l'entité papier acceptée par la machine
-    outputEntity = "lg_uncut_ticket", -- Nom de l'entité produite par la machine
+    outputEntity = "lg_uncut_money", -- Nom de l'entité produite par la machine
     absorbRadius = 300, -- Rayon de détection pour absorber les papiers (300 unités)
 }
 
