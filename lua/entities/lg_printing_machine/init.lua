@@ -7,20 +7,25 @@ if not config then
     error("[legendary_money_fabric] Config LegendaryMoneyFabric.PrintingMachine is missing!")
 end
 
--- Fonction pour absorber les entités de papier proches
-local function CollectNearbyPaper(ent)
-    local paperEntities = ents.FindInSphere(ent:GetPos(), LegendaryMoneyFabric.PrintingMachine.absorbRadius or 150) -- Rayon par défaut 150
-    for _, paperEntity in ipairs(paperEntities) do
-        if paperEntity:GetClass() == (config.paperEntity or "lg_paper") then -- Remplace "lg_paper" par le nom correct de l'entité papier
+-- Fonction pour absorber les entités proches (papier et encre)
+local function CollectNearbyResources(ent)
+    local nearbyEntities = ents.FindInSphere(ent:GetPos(), config.absorbRadius or 150) -- Rayon par défaut 150
+    for _, entity in ipairs(nearbyEntities) do
+        local class = entity:GetClass()
+        if class == (config.paperEntity or "lg_paper") then
             ent.PaperStock = ent.PaperStock + 1 -- Incrémente le stock de papier
-            ent:SetNWInt("PaperStock", ent.PaperStock) -- Synchronise le stock de papier avec le client
-            paperEntity:Remove() -- Supprime l'entité de papier
-
-            -- Démarrer la production quand le nombre requis de papiers est atteint
-            if ent.PaperStock >= config.requiredPaper and not ent.isProducing then
-                ent:StartProduction()
-            end
+            ent:SetNWInt("PaperStock", ent.PaperStock) -- Sync papier client
+            entity:Remove() -- Supprime l'entité papier
+        elseif class == (config.inkEntity or "lg_ink") then
+            ent.InkStock = ent.InkStock + 1 -- Incrémente le stock d'encre
+            ent:SetNWInt("InkStock", ent.InkStock) -- Sync encre client
+            entity:Remove() -- Supprime l'entité encre
         end
+    end
+
+    -- Démarrer la production uniquement si on a assez de papier ET d'encre
+    if not ent.isProducing and ent.PaperStock >= (config.requiredPaper or 1) and ent.InkStock >= (config.requiredInk or 1) then
+        ent:StartProduction()
     end
 end
 
@@ -36,8 +41,11 @@ function ENT:Initialize()
         phys:Wake()
     end
 
-    self.PaperStock = 0 -- Stock de papier
-    self:SetNWInt("PaperStock", self.PaperStock) -- Synchronise avec client
+    self.PaperStock = 0 -- Stock papier
+    self.InkStock = 0 -- Stock encre
+    self:SetNWInt("PaperStock", self.PaperStock)
+    self:SetNWInt("InkStock", self.InkStock)
+
     self.isProducing = false
     self.productionEndTime = 0
 end
@@ -45,30 +53,42 @@ end
 -- Démarrer la production
 function ENT:StartProduction()
     self.isProducing = true
-    self.productionEndTime = CurTime() + config.productionTime -- Temps de production depuis la config
-    self:SetNWFloat("ProductionEndTime", self.productionEndTime) -- Sync client
-    self.PaperStock = 0 -- Reset stock
-    self:SetNWInt("PaperStock", self.PaperStock)
+    self.productionEndTime = CurTime() + (config.productionTime or 10) -- Temps de production depuis config
+    self:SetNWFloat("ProductionEndTime", self.productionEndTime)
+    -- on ne reset pas encore les stocks ici, on fera ça à la fin
 end
 
 -- Terminer la production
 function ENT:FinishProduction()
     self.isProducing = false
-    self:SetNWFloat("ProductionEndTime", 0) -- Reset timer
+    self:SetNWFloat("ProductionEndTime", 0)
 
     -- Créer l'entité produite (ex: argent)
-    local output = ents.Create("lg_uncut_money") -- Mets ici ton nom d'entité de sortie
+    local output = ents.Create(config.outputEntity or "lg_uncut_money")
     if IsValid(output) then
-        local spawnPos = self:GetPos() + Vector(0, 0, 50)
-        output:SetPos(spawnPos)
+        output:SetPos(self:GetPos() + Vector(0, 0, 50))
         output:Spawn()
+    end
+
+    -- Soustraire les ressources utilisées
+    self.PaperStock = self.PaperStock - (config.requiredPaper or 1)
+    if self.PaperStock < 0 then self.PaperStock = 0 end
+    self.InkStock = self.InkStock - (config.requiredInk or 1)
+    if self.InkStock < 0 then self.InkStock = 0 end
+
+    self:SetNWInt("PaperStock", self.PaperStock)
+    self:SetNWInt("InkStock", self.InkStock)
+
+    -- Relancer la production automatiquement si on a encore assez de ressources
+    if self.PaperStock >= (config.requiredPaper or 1) and self.InkStock >= (config.requiredInk or 1) then
+        self:StartProduction()
     end
 end
 
--- Fonction Think, appelée régulièrement
+-- Fonction Think
 function ENT:Think()
     if not self.isProducing then
-        CollectNearbyPaper(self)
+        CollectNearbyResources(self)
     elseif CurTime() >= self.productionEndTime then
         self:FinishProduction()
     end

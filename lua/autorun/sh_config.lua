@@ -3,6 +3,7 @@ LegendaryMoneyFabric = LegendaryMoneyFabric or {}
 -- Config pour la printing machine
 LegendaryMoneyFabric.PrintingMachine = {
     requiredPaper = 2,  -- Nombre de papiers requis pour démarrer la production
+    requiredInk = 1,
     productionTime = 10, -- Temps en secondes pour produire l'entité finale
 }
 
