@@ -2,20 +2,16 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include("shared.lua")
 
--- Configuration
-local config = {
-    requiredItems = 2,  -- Nombre d'entités nécessaires pour lancer le lavage
-    washingTime = 25, -- Temps en secondes pour laver l'entité
-    inputEntity = "lg_cut_money", -- L'entité absorbée par la machine à laver (issue du slicer)
-    outputEntity = "lg_clean_money", -- L'entité donnée en sortie après lavage
-    absorbRadius = 150, -- Rayon de détection pour absorber l'entité
-}
+local config = LegendaryMoneyFabric and LegendaryMoneyFabric.WashingMachine
+if not config then
+    error("[legendary_money_fabric] Config LegendaryMoneyFabric.WashingMachine is missing!")
+end
 
 -- Fonction pour absorber les entités proches
 local function CollectNearbyItems(ent)
-    local nearbyEntities = ents.FindInSphere(ent:GetPos(), config.absorbRadius) -- Cherche dans un rayon de 150 unités
+    local nearbyEntities = ents.FindInSphere(ent:GetPos(), config.absorbRadius or 150) -- Valeur par défaut 150
     for _, entity in ipairs(nearbyEntities) do
-        if entity:GetClass() == config.inputEntity then
+        if entity:GetClass() == (config.inputEntity or "lg_cut_money") then
             ent.ItemStock = ent.ItemStock + 1 -- Incrémente le stock d'entités
             ent:SetNWInt("ItemStock", ent.ItemStock) -- Synchronise le stock avec le client
             entity:Remove() -- Supprime l'entité absorbée
@@ -49,7 +45,7 @@ end
 -- Démarrer le lavage
 function ENT:StartWashing()
     self.isWashing = true
-    self.washingEndTime = CurTime() + config.washingTime -- Définir l'heure de fin de lavage
+    self.washingEndTime = CurTime() + (config.washingTime or 25) -- Définir l'heure de fin de lavage
     self:SetNWFloat("WashingEndTime", self.washingEndTime) -- Envoyer le temps au client
     self.ItemStock = 0 -- Réinitialiser le stock après le début du lavage
     self:SetNWInt("ItemStock", self.ItemStock) -- Mettre à jour le stock sur le réseau
@@ -61,7 +57,7 @@ function ENT:FinishWashing()
     self:SetNWFloat("WashingEndTime", 0) -- Réinitialiser le temps de lavage pour le client
 
     -- Créer l'entité finale après lavage (ex: clean_money)
-    local output = ents.Create(config.outputEntity)
+    local output = ents.Create(config.outputEntity or "lg_clean_money") -- Nom par défaut
     if IsValid(output) then
         local spawnPos = self:GetPos() + Vector(0, 0, 50) -- Positionner l'entité au-dessus de la machine à laver
         output:SetPos(spawnPos)
