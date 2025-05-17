@@ -1,10 +1,10 @@
--- cl_dirtywallet.lua
-
 local dirtyMoneyAmount = 0
 
 net.Receive("DirtyMoneyUpdated", function()
-    local ply = LocalPlayer()
-    dirtyMoneyAmount = ply:GetNWInt("DirtyMoney", 0) -- fallback si besoin
+    dirtyMoneyAmount = net.ReadInt(32) or 0
 end)
 
-
+-- Fonction simple pour récupérer l'argent sale
+function GetDirtyMoney()
+    return dirtyMoneyAmount
+end
