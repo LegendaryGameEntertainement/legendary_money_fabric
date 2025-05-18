@@ -5,7 +5,7 @@ function ENT:Draw()
     self:DrawModel()
 
     -- Vérifie la position de l'entité et prépare le dessin 3D
-    local pos = self:GetPos() + Vector(0, 0, 60) -- On ajuste la hauteur de l'icône au-dessus de l'entité
+    local pos = self:GetPos() + Vector(0, 0, 90) -- On ajuste la hauteur de l'icône au-dessus de l'entité
     local ang = LocalPlayer():EyeAngles()
     ang:RotateAroundAxis(ang:Forward(), 90)
     ang:RotateAroundAxis(ang:Right(), 90)
