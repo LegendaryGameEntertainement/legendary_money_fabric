@@ -41,15 +41,15 @@ hook.Add("PlayerSay", "DirtyMoneyCommands", function(ply, text)
     local args = string.Explode(" ", text)
     local cmd = string.lower(args[1])
 
-    if cmd == "/dirtymoney" then
+    if cmd == "!dirtymoney" then
         local dm = ply:GetDirtyMoney()
         ply:ChatPrint("Vous avez "..DarkRP.formatMoney(dm).." en argent sale.")
         return ""
     end
 
-    if cmd == "/paydirty" then
+    if cmd == "!paydirty" then
         if #args < 3 then
-            ply:ChatPrint("Usage : /paydirty <joueur> <montant>")
+            ply:ChatPrint("Usage : !paydirty <joueur> <montant>")
             return ""
         end
 
@@ -93,9 +93,9 @@ hook.Add("PlayerSay", "DirtyMoneyAdminCommands", function(ply, text)
     -- Seuls les admins peuvent utiliser ces commandes
     if not ply:IsAdmin() then return end
 
-    if cmd == "/adddirtymoney" then
+    if cmd == "!adddirtymoney" then
         if #args < 3 then
-            ply:ChatPrint("Usage : /adddirtymoney <joueur> <montant>")
+            ply:ChatPrint("Usage : !adddirtymoney <joueur> <montant>")
             return ""
         end
 
@@ -116,9 +116,9 @@ hook.Add("PlayerSay", "DirtyMoneyAdminCommands", function(ply, text)
         return ""
     end
 
-    if cmd == "/removedirtymoney" then
+    if cmd == "!removedirtymoney" then
         if #args < 3 then
-            ply:ChatPrint("Usage : /removedirtymoney <joueur> <montant>")
+            ply:ChatPrint("Usage : !removedirtymoney <joueur> <montant>")
             return ""
         end
 
@@ -139,9 +139,9 @@ hook.Add("PlayerSay", "DirtyMoneyAdminCommands", function(ply, text)
         return ""
     end
 
-    if cmd == "/getdirtymoney" then
+    if cmd == "!getdirtymoney" then
         if #args < 2 then
-            ply:ChatPrint("Usage : /getdirtymoney <joueur>")
+            ply:ChatPrint("Usage : !getdirtymoney <joueur>")
             return ""
         end
 
