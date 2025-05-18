@@ -26,4 +26,5 @@ LegendaryMoneyFabric.PNJ = {
     sellRadius = 100,  -- Rayon autour du PNJ pour détecter les entités "clean_money"
     moneyMin = 100,    -- Montant minimum que le joueur peut recevoir
     moneyMax = 500,    -- Montant maximum que le joueur peut recevoir
+    cleanMoneyEntity = "lg_clean_money",
 }

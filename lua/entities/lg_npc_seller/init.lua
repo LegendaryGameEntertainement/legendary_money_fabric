@@ -3,12 +3,11 @@ AddCSLuaFile("shared.lua")
 include("shared.lua")
 
 -- Configuration
-local config = {
-    sellRadius = 100,  -- Rayon autour du PNJ pour détecter les entités "clean_money"
-    moneyMin = 100,    -- Montant minimum que le joueur peut recevoir
-    moneyMax = 500,    -- Montant maximum que le joueur peut recevoir
-    cleanMoneyEntity = "lg_clean_money"  -- L'entité qui est vendue
-}
+local config = LegendaryMoneyFabric and LegendaryMoneyFabric.PNJ
+if not config then
+    error("[legendary_money_fabric] Config LegendaryMoneyFabric.PNJ is missing!")
+end
+
 
 -- Fonction pour vérifier si une entité "clean_money" est à proximité
 local function FindNearbyCleanMoney(ply, pnj)
