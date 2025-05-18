@@ -30,6 +30,10 @@ function ENT:Use(ply)
 end
 
 function ENT:SetZoneName(name)
-    self.ZoneName = name
-    self:SetNWString("ZoneName", name)
+    self.zoneName = name
 end
+
+function ENT:GetZoneName()
+    return self.zoneName or "unknown"
+end
+
