@@ -45,10 +45,10 @@ function ENT:Use(activator, caller)
             local reward = math.random(config.moneyMin, config.moneyMax)
 
             -- Donne l'argent au joueur
-            caller:addMoney(reward)  -- Remplace cette ligne par le système d'argent de ton serveur (DarkRP par exemple)
+            caller:AddDirtyMoney(reward)  -- Remplace cette ligne par le système d'argent de ton serveur (DarkRP par exemple)
 
             -- Envoie un message au joueur
-            caller:ChatPrint("Vous avez vendu de l'argent propre pour " .. reward .. " $ !")
+            caller:ChatPrint("Vous avez vendu de l'argent sale pour " .. reward .. " $ !")
         else
             -- Aucune entité "clean_money" à proximité
             caller:ChatPrint("Vous n'avez pas d'argent propre à vendre.")
