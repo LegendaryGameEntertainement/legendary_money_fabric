@@ -26,49 +26,10 @@ hook.Add("InitPostEntity", "SpawnSavedZones", function()
     end
 end)
 
-hook.Add("PlayerSay", "ZoneChatCommands", function(ply, text)
-    local args = string.Explode(" ", text)
-
-    if string.lower(args[1]) == "!createzone" then
-        local name = args[2]
-        if not name then
-            ply:ChatPrint("Utilisation : !createzone [nom]")
-            return ""
-        end
-
-        local trace = ply:GetEyeTrace()
-        local pos = trace.HitPos
-
-        if zones[name] then
-            ply:ChatPrint("Une zone avec ce nom existe déjà.")
-            return ""
-        end
-
-        zones[name] = { pos = { pos.x, pos.y, pos.z } }
-        saveZones()
-        spawnZone(name, pos)
-
-        ply:ChatPrint("Zone '" .. name .. "' créée.")
-        return ""
-    end
-
-    if string.lower(args[1]) == "!deletezone" then
-        local name = args[2]
-        if not zones[name] then
-            ply:ChatPrint("Zone introuvable.")
-            return ""
-        end
-
-        -- Supprime l'entité dans le monde
-        for _, ent in ipairs(ents.FindByClass("zone_sphere")) do
-            if ent:GetZoneName() == name then
-                ent:Remove()
-            end
-        end
-
-        zones[name] = nil
-        saveZones()
-        ply:ChatPrint("Zone '" .. name .. "' supprimée.")
+hook.Add("PlayerSay", "OpenZoneMenuCommand", function(ply, text)
+    if string.StartWith(text, "!createzone") then
+        net.Start("OpenZoneCreationMenu")
+        net.Send(ply)
         return ""
     end
 end)
