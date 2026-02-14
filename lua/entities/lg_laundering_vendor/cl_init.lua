@@ -85,25 +85,25 @@ net.Receive("LG_OpenLaunderingShop", function()
             -- Image du bâtiment (à gauche)
             local imgPanel = vgui.Create("DPanel", panel)
             imgPanel:Dock(LEFT)
-            imgPanel:SetWide(180)
-            imgPanel:DockMargin(10, 10, 0, 10)
-            
-            -- Charger le material si disponible
-            local imageMat = nil
-            if building.image and building.image ~= "" then
-                imageMat = Material(building.image, "smooth")
-            end
-            
+            imgPanel:SetWide(100)
+            imgPanel:DockMargin(10, 10, 10, 10)
             imgPanel.Paint = function(self, w, h)
                 draw.RoundedBox(4, 0, 0, w, h, Color(40, 40, 40))
                 
-                -- Afficher l'image si elle existe
-                if imageMat and not imageMat:IsError() then
-                    surface.SetDrawColor(255, 255, 255, 255)
-                    surface.SetMaterial(imageMat)
-                    surface.DrawTexturedRect(5, 5, w-10, h-10)
+                -- Tenter de charger l'image
+                if building.image and building.image ~= "" then
+                    local mat = Material(building.image)
+                    
+                    if mat and not mat:IsError() then
+                        surface.SetDrawColor(255, 255, 255, 255)
+                        surface.SetMaterial(mat)
+                        surface.DrawTexturedRect(5, 5, w-10, h-10)
+                    else
+                        -- Debug : afficher le chemin si l'image ne charge pas
+                        draw.SimpleText("❌", "DermaLarge", w/2, h/2-15, Color(255, 100, 100), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                        draw.SimpleText(building.image, "DermaDefault", w/2, h/2+15, Color(200, 200, 200), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                    end
                 else
-                    -- Afficher un placeholder si l'image n'existe pas
                     draw.SimpleText("📷", "DermaLarge", w/2, h/2, Color(150, 150, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 end
             end
@@ -134,13 +134,13 @@ net.Receive("LG_OpenLaunderingShop", function()
             maxLabel:Dock(TOP)
             
             local timeLabel = vgui.Create("DLabel", infoPanel)
-            timeLabel:SetText("Temps de blanchiment : " .. building.launderTime .. " minutes")
+            timeLabel:SetText("Temps : " .. building.launderTime .. " min")
             timeLabel:SetFont("DermaDefault")
             timeLabel:SetTextColor(Color(255, 255, 255))
             timeLabel:Dock(TOP)
             
             local lossLabel = vgui.Create("DLabel", infoPanel)
-            lossLabel:SetText("Taux de perte : " .. (building.lossRate * 100) .. "%")
+            lossLabel:SetText("Perte : " .. (building.lossRate * 100) .. "%")
             lossLabel:SetFont("DermaDefault")
             lossLabel:SetTextColor(Color(255, 100, 100))
             lossLabel:Dock(TOP)

@@ -57,7 +57,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 150000,
             launderTime = 7,
             lossRate = 0.15,
-            image = "materials/laundering/carwash.png"
+            image = "icon16/cart.png"
         },
         {
             id = "postoffice",
