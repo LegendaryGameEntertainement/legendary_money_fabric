@@ -87,9 +87,25 @@ net.Receive("LG_OpenLaunderingShop", function()
             imgPanel:Dock(LEFT)
             imgPanel:SetWide(180)
             imgPanel:DockMargin(10, 10, 0, 10)
+            
+            -- Charger le material si disponible
+            local imageMat = nil
+            if building.image and building.image ~= "" then
+                imageMat = Material(building.image, "smooth")
+            end
+            
             imgPanel.Paint = function(self, w, h)
-                draw.RoundedBox(4, 0, 0, w, h, Color(60, 60, 60))
-                draw.SimpleText("📷", "DermaLarge", w/2, h/2, Color(150, 150, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                draw.RoundedBox(4, 0, 0, w, h, Color(40, 40, 40))
+                
+                -- Afficher l'image si elle existe
+                if imageMat and not imageMat:IsError() then
+                    surface.SetDrawColor(255, 255, 255, 255)
+                    surface.SetMaterial(imageMat)
+                    surface.DrawTexturedRect(5, 5, w-10, h-10)
+                else
+                    -- Afficher un placeholder si l'image n'existe pas
+                    draw.SimpleText("📷", "DermaLarge", w/2, h/2, Color(150, 150, 150), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+                end
             end
             
             -- Informations (centre)

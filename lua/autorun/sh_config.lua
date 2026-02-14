@@ -48,7 +48,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 100000, -- Montant max d'argent sale blanchissable
             launderTime = 1, -- Temps en minutes
             lossRate = 0.20, -- 20% de perte (1$ sale = 0.80$ propre)
-            image = "materials/laundering/laundromat.png"
+            image = "UI/laundry.png"
         },
         {
             id = "carwash",
@@ -88,3 +88,7 @@ LegendaryMoneyFabric.Laundering = {
         }
     }
 }
+
+if SERVER then
+    AddCSLuaFile()
+end

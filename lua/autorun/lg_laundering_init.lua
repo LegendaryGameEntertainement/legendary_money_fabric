@@ -1,64 +1,10 @@
--- Chargement automatique du système de blanchiment
-
--- Initialiser la table de configuration
-LegendaryMoneyFabric = LegendaryMoneyFabric or {}
-
--- Configuration du système de blanchiment
-LegendaryMoneyFabric.Laundering = {
-    -- NPC Vendeur
-    vendorModel = "models/Humans/Group01/male_07.mdl",
-    vendorName = "Vendeur de Bâtiments",
-    
-    -- Bâtiments disponibles à l'achat
-    buildings = {
-        {
-            id = "laundromat",
-            name = "Laverie Automatique",
-            price = 50000,
-            maxAmount = 100000,
-            launderTime = 5,
-            lossRate = 0.20,
-            image = "materials/laundering/laundromat.png"
-        },
-        {
-            id = "carwash",
-            name = "Station de Lavage",
-            price = 75000,
-            maxAmount = 150000,
-            launderTime = 7,
-            lossRate = 0.15,
-            image = "materials/laundering/carwash.png"
-        },
-        {
-            id = "postoffice",
-            name = "Bureau de Poste",
-            price = 100000,
-            maxAmount = 200000,
-            launderTime = 10,
-            lossRate = 0.10,
-            image = "materials/laundering/postoffice.png"
-        },
-        {
-            id = "nightclub",
-            name = "Boîte de Nuit",
-            price = 150000,
-            maxAmount = 300000,
-            launderTime = 15,
-            lossRate = 0.05,
-            image = "materials/laundering/nightclub.png"
-        },
-        {
-            id = "casino",
-            name = "Casino",
-            price = 250000,
-            maxAmount = 500000,
-            launderTime = 20,
-            lossRate = 0.03,
-            image = "materials/laundering/casino.png"
-        }
-    }
-}
-
+-- Chargement de la configuration
+if SERVER then
+    AddCSLuaFile("autorun/sh_config.lua")
+    include("autorun/sh_config.lua")
+else
+    include("autorun/sh_config.lua")
+end
 if SERVER then
     AddCSLuaFile()
     
