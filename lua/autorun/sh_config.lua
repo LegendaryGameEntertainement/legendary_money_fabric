@@ -57,7 +57,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 150000,
             launderTime = 7,
             lossRate = 0.15,
-            image = "icon16/cart.png"
+            image = "UI/carwash.png"
         },
         {
             id = "postoffice",
@@ -66,7 +66,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 200000,
             launderTime = 10,
             lossRate = 0.10,
-            image = "materials/laundering/postoffice.png"
+            image = "UI/postoffice.png"
         },
         {
             id = "nightclub",
@@ -75,7 +75,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 300000,
             launderTime = 15,
             lossRate = 0.05,
-            image = "materials/laundering/nightclub.png"
+            image = "UI/nightclub.png"
         },
         {
             id = "casino",
@@ -84,7 +84,7 @@ LegendaryMoneyFabric.Laundering = {
             maxAmount = 500000,
             launderTime = 20,
             lossRate = 0.03,
-            image = "materials/laundering/casino.png"
+            image = "UI/casino.png"
         }
     }
 }
