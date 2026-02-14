@@ -15,7 +15,11 @@ function ENT:Initialize()
     self:SetNWInt("CurrentMoney", 0)
     self:SetNWInt("LaunderEndTime", 0)
     self:SetNWBool("IsLaundering", false)
+    
+    -- Permettre la sauvegarde automatique
+    self.CanPersist = true
 end
+
 
 function ENT:SetupDataTables()
     self:NetworkVar("String", 0, "BuildingID")

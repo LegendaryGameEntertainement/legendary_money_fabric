@@ -29,14 +29,20 @@ function TOOL:LeftClick(trace)
     zone:SetPos(trace.HitPos + trace.HitNormal * 15)
     zone:SetAngles(Angle(0, ply:EyeAngles().y, 0))
     zone:Spawn()
-    zone:SetBuildingType(buildingType)
+    
+    -- Important : définir le type AVANT que le hook de sauvegarde ne se déclenche
+    timer.Simple(0, function()
+        if IsValid(zone) then
+            zone:SetBuildingType(buildingType)
+        end
+    end)
     
     undo.Create("LG_LaunderingZone")
     undo.AddEntity(zone)
     undo.SetPlayer(ply)
     undo.Finish()
     
-    DarkRP.notify(ply, 0, 5, "Zone de blanchiment créée!")
+    DarkRP.notify(ply, 0, 5, "Zone de blanchiment créée et sauvegardée!")
     return true
 end
 
@@ -127,14 +133,37 @@ if CLIENT then
         
         UpdateInfo()
         
-        timer.Create("LG_UpdateBuildingInfo_" .. panel:GetName(), 0.2, 0, function()
+        local timerName = "LG_UpdateBuildingInfo_" .. math.random(1, 999999)
+        timer.Create(timerName, 0.2, 0, function()
             if not IsValid(panel) or not IsValid(infoLabel) then 
-                timer.Remove("LG_UpdateBuildingInfo_" .. panel:GetName())
+                timer.Remove(timerName)
                 return 
             end
             UpdateInfo()
         end)
         
         panel:AddItem(infoLabel)
+        
+        -- Section gestion des entités
+        panel:AddControl("Label", {Text = "\n━━━━━━━━━━━━━━━━━━━━━"})
+        panel:AddControl("Header", {Description = "Gestion des entités sauvegardées"})
+        
+        panel:AddControl("Button", {
+            Label = "Recharger les entités",
+            Command = "lg_reload_entities",
+            Text = ""
+        })
+        
+        panel:AddControl("Button", {
+            Label = "Lister les entités",
+            Command = "lg_list_entities",
+            Text = ""
+        })
+        
+        panel:AddControl("Button", {
+            Label = "⚠ Tout supprimer",
+            Command = "lg_clear_entities",
+            Text = ""
+        })
     end
 end

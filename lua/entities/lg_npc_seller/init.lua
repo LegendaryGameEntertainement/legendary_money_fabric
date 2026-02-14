@@ -4,10 +4,10 @@ include("shared.lua")
 
 -- Configuration
 local config = LegendaryMoneyFabric and LegendaryMoneyFabric.PNJ
+
 if not config then
     error("[legendary_money_fabric] Config LegendaryMoneyFabric.PNJ is missing!")
 end
-
 
 -- Fonction pour vérifier si une entité "clean_money" est à proximité
 local function FindNearbyCleanMoney(ply, pnj)
@@ -22,7 +22,7 @@ end
 
 -- Initialisation du PNJ
 function ENT:Initialize()
-    self:SetModel("models/Humans/Group01/male_02.mdl")  -- Modèle du PNJ
+    self:SetModel("models/Humans/Group01/male_02.mdl") -- Modèle du PNJ
     self:SetHullType(HULL_HUMAN)
     self:SetHullSizeNormal()
     self:SetNPCState(NPC_STATE_SCRIPT)
@@ -30,23 +30,26 @@ function ENT:Initialize()
     self:CapabilitiesAdd(CAP_ANIMATEDFACE, CAP_TURN_HEAD)
     self:SetUseType(SIMPLE_USE)
     self:DropToFloor()
+    
+    -- Permettre la sauvegarde automatique de la position
+    self.CanPersist = true
 end
 
 -- Fonction appelée lorsque le joueur interagit avec le PNJ (appuie sur "E")
 function ENT:Use(activator, caller)
     if IsValid(caller) and caller:IsPlayer() then
         local cleanMoney = FindNearbyCleanMoney(caller, self) -- Vérifie s'il y a de l'argent propre près du PNJ
-
+        
         if cleanMoney then
             -- Supprime l'entité "clean_money"
             cleanMoney:Remove()
-
+            
             -- Calcul d'une récompense aléatoire entre le minimum et le maximum
             local reward = math.random(config.moneyMin, config.moneyMax)
-
+            
             -- Donne l'argent au joueur
-            caller:AddDirtyMoney(reward)  -- Remplace cette ligne par le système d'argent de ton serveur (DarkRP par exemple)
-
+            caller:AddDirtyMoney(reward)
+            
             -- Envoie un message au joueur
             caller:ChatPrint("Vous avez vendu de l'argent sale pour " .. reward .. " $ !")
         else
@@ -54,4 +57,9 @@ function ENT:Use(activator, caller)
             caller:ChatPrint("Vous n'avez pas d'argent propre à vendre.")
         end
     end
+end
+
+-- Empêcher le NPC de prendre des dégâts
+function ENT:OnTakeDamage(dmginfo)
+    return false
 end
