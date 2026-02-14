@@ -1,0 +1,145 @@
+-- Chargement automatique du système de blanchiment
+
+-- Initialiser la table de configuration
+LegendaryMoneyFabric = LegendaryMoneyFabric or {}
+
+-- Configuration du système de blanchiment
+LegendaryMoneyFabric.Laundering = {
+    -- NPC Vendeur
+    vendorModel = "models/Humans/Group01/male_07.mdl",
+    vendorName = "Vendeur de Bâtiments",
+    
+    -- Bâtiments disponibles à l'achat
+    buildings = {
+        {
+            id = "laundromat",
+            name = "Laverie Automatique",
+            price = 50000,
+            maxAmount = 100000,
+            launderTime = 5,
+            lossRate = 0.20,
+            image = "materials/laundering/laundromat.png"
+        },
+        {
+            id = "carwash",
+            name = "Station de Lavage",
+            price = 75000,
+            maxAmount = 150000,
+            launderTime = 7,
+            lossRate = 0.15,
+            image = "materials/laundering/carwash.png"
+        },
+        {
+            id = "postoffice",
+            name = "Bureau de Poste",
+            price = 100000,
+            maxAmount = 200000,
+            launderTime = 10,
+            lossRate = 0.10,
+            image = "materials/laundering/postoffice.png"
+        },
+        {
+            id = "nightclub",
+            name = "Boîte de Nuit",
+            price = 150000,
+            maxAmount = 300000,
+            launderTime = 15,
+            lossRate = 0.05,
+            image = "materials/laundering/nightclub.png"
+        },
+        {
+            id = "casino",
+            name = "Casino",
+            price = 250000,
+            maxAmount = 500000,
+            launderTime = 20,
+            lossRate = 0.03,
+            image = "materials/laundering/casino.png"
+        }
+    }
+}
+
+if SERVER then
+    AddCSLuaFile()
+    
+    -- Créer la table SQL pour sauvegarder les bâtiments
+    sql.Query([[
+        CREATE TABLE IF NOT EXISTS lg_laundering_buildings (
+            steamid TEXT NOT NULL,
+            building_id TEXT NOT NULL,
+            PRIMARY KEY (steamid, building_id)
+        )
+    ]])
+    
+    print("[legendary_money_fabric] Système de blanchiment chargé!")
+    
+    -- Fonction pour charger les bâtiments d'un joueur
+    local function LoadPlayerBuildings(ply)
+        local steamid = ply:SteamID64()
+        local result = sql.Query("SELECT building_id FROM lg_laundering_buildings WHERE steamid = '" .. sql.SQLStr(steamid, true) .. "'")
+        
+        ply.launderingBuildings = {}
+        
+        if result then
+            for _, row in ipairs(result) do
+                ply.launderingBuildings[row.building_id] = true
+            end
+        end
+        
+        print("[legendary_money_fabric] Chargé " .. table.Count(ply.launderingBuildings) .. " bâtiment(s) pour " .. ply:Nick())
+    end
+    
+    -- Fonction pour sauvegarder un bâtiment acheté
+    local function SavePlayerBuilding(ply, buildingID)
+        local steamid = ply:SteamID64()
+        
+        sql.Query(string.format(
+            "INSERT OR IGNORE INTO lg_laundering_buildings (steamid, building_id) VALUES ('%s', '%s')",
+            sql.SQLStr(steamid, true),
+            sql.SQLStr(buildingID, true)
+        ))
+    end
+    
+    -- Fonction pour vérifier si un joueur possède un bâtiment
+    local function PlayerHasBuilding(ply, buildingID)
+        return ply.launderingBuildings and ply.launderingBuildings[buildingID] == true
+    end
+    
+    -- Exposer les fonctions
+    LegendaryMoneyFabric.LoadPlayerBuildings = LoadPlayerBuildings
+    LegendaryMoneyFabric.SavePlayerBuilding = SavePlayerBuilding
+    LegendaryMoneyFabric.PlayerHasBuilding = PlayerHasBuilding
+    
+    -- Charger les données au spawn
+    hook.Add("PlayerInitialSpawn", "LG_LoadLaunderingData", function(ply)
+        timer.Simple(1, function()
+            if IsValid(ply) then
+                LoadPlayerBuildings(ply)
+            end
+        end)
+    end)
+    
+    -- Commande pour voir ses bâtiments
+    hook.Add("PlayerSay", "LG_LaunderingCommands", function(ply, text)
+        if string.lower(text) == "!mybuildings" or string.lower(text) == "!mesbatiments" then
+            local count = table.Count(ply.launderingBuildings or {})
+            
+            if count == 0 then
+                DarkRP.notify(ply, 0, 5, "Vous ne possédez aucun bâtiment de blanchiment.")
+            else
+                DarkRP.notify(ply, 0, 5, "Vos bâtiments de blanchiment :")
+                
+                for buildingID, _ in pairs(ply.launderingBuildings) do
+                    for _, building in ipairs(LegendaryMoneyFabric.Laundering.buildings) do
+                        if building.id == buildingID then
+                            DarkRP.notify(ply, 0, 5, "- " .. building.name)
+                            break
+                        end
+                    end
+                end
+            end
+            
+            return ""
+        end
+    end)
+end

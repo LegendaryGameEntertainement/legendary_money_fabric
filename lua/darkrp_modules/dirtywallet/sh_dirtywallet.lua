@@ -12,9 +12,13 @@ end
 
 local function setDirtyMoney(ply, amount)
     ply:SetPData("dirty_money", tostring(math.max(0, math.floor(amount))))
+    
     -- Notifier client pour mise à jour HUD
-    net.Start("DirtyMoneyUpdated")
-    net.Send(ply)
+    if SERVER then
+        net.Start("DirtyMoneyUpdated")
+        net.WriteInt(math.floor(amount), 32)
+        net.Send(ply)
+    end
 end
 
 -- Méthodes utiles accessibles depuis sv_dirtywallet.lua
