@@ -34,8 +34,40 @@ end
 function ENT:Use(activator, caller)
     if not IsValid(activator) or not activator:IsPlayer() then return end
     
-    net.Start("LG_OpenLaunderingShop")
-    net.Send(activator)
+    print("[legendary_money_fabric] " .. activator:Nick() .. " ouvre le NPC vendeur")
+    
+    -- FORCER le rechargement depuis le fichier
+    if LegendaryMoneyFabric.LoadPlayerBuildings then
+        LegendaryMoneyFabric.LoadPlayerBuildings(activator)
+    else
+        print("[legendary_money_fabric] ERREUR: LoadPlayerBuildings n'existe pas!")
+    end
+    
+    -- Attendre que le chargement soit terminé
+    timer.Simple(0.3, function()
+        if not IsValid(activator) then return end
+        
+        local buildings = activator.launderingBuildings or {}
+        local count = table.Count(buildings)
+        
+        print("[legendary_money_fabric] Envoi de " .. count .. " bâtiment(s) à " .. activator:Nick())
+        
+        -- DEBUG : Afficher les bâtiments
+        if count > 0 then
+            for buildingID, _ in pairs(buildings) do
+                print("  - " .. buildingID)
+            end
+        else
+            print("  (aucun bâtiment)")
+        end
+        
+        net.Start("LG_OpenLaunderingShop")
+        net.WriteUInt(count, 8)
+        for buildingID, _ in pairs(buildings) do
+            net.WriteString(buildingID)
+        end
+        net.Send(activator)
+    end)
 end
 
 function ENT:OnTakeDamage(dmginfo)
@@ -44,27 +76,12 @@ end
 
 util.AddNetworkString("LG_OpenLaunderingShop")
 util.AddNetworkString("LG_BuyLaunderingBuilding")
-util.AddNetworkString("LG_SendPlayerBuildings")
-
--- Envoyer les bâtiments possédés au client
-net.Receive("LG_OpenLaunderingShop", function(len, ply)
-    -- Envoyer la liste des bâtiments possédés
-    net.Start("LG_SendPlayerBuildings")
-    
-    local buildings = ply.launderingBuildings or {}
-    local count = table.Count(buildings)
-    
-    net.WriteUInt(count, 8)
-    for buildingID, _ in pairs(buildings) do
-        net.WriteString(buildingID)
-    end
-    
-    net.Send(ply)
-end)
 
 -- Réception de l'achat
 net.Receive("LG_BuyLaunderingBuilding", function(len, ply)
     local buildingID = net.ReadString()
+    
+    print("[legendary_money_fabric] " .. ply:Nick() .. " tente d'acheter " .. buildingID)
     
     local config = LegendaryMoneyFabric.Laundering
     if not config or not config.buildings then
@@ -86,33 +103,48 @@ net.Receive("LG_BuyLaunderingBuilding", function(len, ply)
         return
     end
     
-    -- Vérifier si le joueur possède déjà ce bâtiment
-    if LegendaryMoneyFabric.PlayerHasBuilding(ply, buildingID) then
-        DarkRP.notify(ply, 1, 5, "Vous possédez déjà ce bâtiment!")
-        return
+    -- IMPORTANT : Recharger les données depuis le fichier
+    if LegendaryMoneyFabric.LoadPlayerBuildings then
+        LegendaryMoneyFabric.LoadPlayerBuildings(ply)
     end
     
-    -- Vérifier si le joueur a assez d'argent propre
-    if not ply.getDarkRPVar then
-        print("[legendary_money_fabric] DarkRP non détecté!")
-        return
-    end
-    
-    local playerMoney = ply:getDarkRPVar("money") or 0
-    if playerMoney < building.price then
-        DarkRP.notify(ply, 1, 5, "Vous n'avez pas assez d'argent propre! (" .. DarkRP.formatMoney(building.price) .. " requis)")
-        return
-    end
-    
-    -- Retirer l'argent
-    ply:addMoney(-building.price)
-    
-    -- Ajouter le bâtiment
-    ply.launderingBuildings = ply.launderingBuildings or {}
-    ply.launderingBuildings[buildingID] = true
-    
-    -- Sauvegarder dans la base de données
-    LegendaryMoneyFabric.SavePlayerBuilding(ply, buildingID)
-    
-    DarkRP.notify(ply, 0, 5, "Vous avez acheté un " .. building.name .. "!")
+    -- Petit délai pour s'assurer que le chargement est terminé
+    timer.Simple(0.1, function()
+        if not IsValid(ply) then return end
+        
+        -- Vérifier si le joueur possède déjà ce bâtiment
+        if ply.launderingBuildings and ply.launderingBuildings[buildingID] == true then
+            DarkRP.notify(ply, 1, 5, "Vous possédez déjà ce bâtiment!")
+            print("[legendary_money_fabric] " .. ply:Nick() .. " possède déjà " .. buildingID)
+            return
+        end
+        
+        -- Vérifier l'argent
+        if not ply.getDarkRPVar then
+            print("[legendary_money_fabric] DarkRP non détecté!")
+            return
+        end
+        
+        local playerMoney = ply:getDarkRPVar("money") or 0
+        if playerMoney < building.price then
+            DarkRP.notify(ply, 1, 5, "Vous n'avez pas assez d'argent! (" .. DarkRP.formatMoney(building.price) .. " requis)")
+            return
+        end
+        
+        -- Retirer l'argent
+        ply:addMoney(-building.price)
+        
+        -- Ajouter le bâtiment
+        ply.launderingBuildings = ply.launderingBuildings or {}
+        ply.launderingBuildings[buildingID] = true
+        
+        -- Sauvegarder
+        if LegendaryMoneyFabric.SavePlayerBuilding then
+            LegendaryMoneyFabric.SavePlayerBuilding(ply, buildingID)
+        end
+        
+        DarkRP.notify(ply, 0, 5, "Vous avez acheté un " .. building.name .. "!")
+        
+        print("[legendary_money_fabric] " .. ply:Nick() .. " a acheté " .. buildingID .. " avec succès")
+    end)
 end)

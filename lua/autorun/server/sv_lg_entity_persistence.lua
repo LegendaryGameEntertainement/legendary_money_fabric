@@ -1,6 +1,11 @@
 -- Système de sauvegarde manuel des positions des entités
 if not SERVER then return end
 
+print("[legendary_money_fabric] ========================================")
+print("[legendary_money_fabric] sv_lg_entity_persistence.lua CHARGÉ !")
+print("[legendary_money_fabric] ========================================")
+
+
 LegendaryMoneyFabric = LegendaryMoneyFabric or {}
 LegendaryMoneyFabric.Persistence = LegendaryMoneyFabric.Persistence or {}
 
