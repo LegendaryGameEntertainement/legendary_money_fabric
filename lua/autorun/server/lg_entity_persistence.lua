@@ -1,10 +1,10 @@
--- Système de sauvegarde des positions des entités
+-- Système de sauvegarde manuel des positions des entités
 if not SERVER then return end
 
 LegendaryMoneyFabric = LegendaryMoneyFabric or {}
 LegendaryMoneyFabric.Persistence = LegendaryMoneyFabric.Persistence or {}
 
--- Entités à sauvegarder automatiquement
+-- Entités à sauvegarder
 local PERSISTENT_ENTITIES = {
     ["lg_laundering_vendor"] = true,
     ["lg_laundering_zone"] = true,
@@ -28,36 +28,44 @@ sql.Query([[
 
 print("[legendary_money_fabric] Système de persistence des entités chargé!")
 
--- Sauvegarder une entité
-local function SaveEntity(ent)
-    if not IsValid(ent) then return false end
+-- Sauvegarder toutes les entités présentes sur la map
+local function SaveAllEntities()
+    -- D'abord, vider la table
+    sql.Query("DELETE FROM lg_entity_positions")
     
-    local class = ent:GetClass()
-    if not PERSISTENT_ENTITIES[class] then return false end
+    local count = 0
     
-    local pos = ent:GetPos()
-    local ang = ent:GetAngles()
-    
-    -- Données spécifiques selon le type d'entité
-    local data = {}
-    
-    if class == "lg_laundering_zone" then
-        data.buildingID = ent:GetNWString("BuildingID", "")
+    -- Parcourir toutes les entités
+    for _, ent in ipairs(ents.GetAll()) do
+        if IsValid(ent) and PERSISTENT_ENTITIES[ent:GetClass()] then
+            local class = ent:GetClass()
+            local pos = ent:GetPos()
+            local ang = ent:GetAngles()
+            
+            -- Données spécifiques selon le type d'entité
+            local data = {}
+            
+            if class == "lg_laundering_zone" then
+                data.buildingID = ent:GetNWString("BuildingID", "")
+            end
+            
+            local dataJSON = util.TableToJSON(data)
+            
+            sql.Query(string.format([[
+                INSERT INTO lg_entity_positions (entity_class, pos_x, pos_y, pos_z, ang_p, ang_y, ang_r, data)
+                VALUES ('%s', %f, %f, %f, %f, %f, %f, '%s')
+            ]], 
+                sql.SQLStr(class, true),
+                pos.x, pos.y, pos.z,
+                ang.p, ang.y, ang.r,
+                sql.SQLStr(dataJSON, true)
+            ))
+            
+            count = count + 1
+        end
     end
     
-    local dataJSON = util.TableToJSON(data)
-    
-    sql.Query(string.format([[
-        INSERT INTO lg_entity_positions (entity_class, pos_x, pos_y, pos_z, ang_p, ang_y, ang_r, data)
-        VALUES ('%s', %f, %f, %f, %f, %f, %f, '%s')
-    ]], 
-        sql.SQLStr(class, true),
-        pos.x, pos.y, pos.z,
-        ang.p, ang.y, ang.r,
-        sql.SQLStr(dataJSON, true)
-    ))
-    
-    return true
+    return count
 end
 
 -- Charger toutes les entités sauvegardées
@@ -66,7 +74,7 @@ local function LoadAllEntities()
     
     if not result then
         print("[legendary_money_fabric] Aucune entité à charger")
-        return
+        return 0
     end
     
     local count = 0
@@ -95,54 +103,28 @@ local function LoadAllEntities()
                 end
             end
             
-            -- Marquer l'entité comme persistante
-            ent.IsPersistent = true
-            ent.PersistenceID = tonumber(row.id)
-            
             count = count + 1
         end
     end
     
     print("[legendary_money_fabric] " .. count .. " entité(s) chargée(s)")
+    return count
 end
 
--- Supprimer une entité de la base de données
-local function RemoveEntityFromDB(ent)
-    if not IsValid(ent) or not ent.PersistenceID then return end
-    
-    sql.Query("DELETE FROM lg_entity_positions WHERE id = " .. ent.PersistenceID)
-end
-
--- Nettoyer toutes les entités sauvegardées
-local function ClearAllEntities()
-    sql.Query("DELETE FROM lg_entity_positions")
-    print("[legendary_money_fabric] Toutes les entités sauvegardées ont été supprimées de la base de données")
-end
-
--- Hook pour sauvegarder quand une entité est créée
-hook.Add("OnEntityCreated", "LG_SavePersistentEntity", function(ent)
-    timer.Simple(0.1, function()
+-- Supprimer toutes les positions sauvegardées
+local function DeleteAllPositions()
+    -- Supprimer toutes les entités présentes
+    for _, ent in ipairs(ents.GetAll()) do
         if IsValid(ent) and PERSISTENT_ENTITIES[ent:GetClass()] then
-            -- Ne pas sauvegarder si c'est une entité qui vient d'être chargée
-            if ent.IsPersistent then return end
-            
-            SaveEntity(ent)
-            
-            -- Marquer comme persistante
-            ent.IsPersistent = true
-            
-            print("[legendary_money_fabric] Entité " .. ent:GetClass() .. " sauvegardée")
+            ent:Remove()
         end
-    end)
-end)
-
--- Hook pour supprimer de la DB quand l'entité est supprimée
-hook.Add("EntityRemoved", "LG_RemovePersistentEntity", function(ent)
-    if IsValid(ent) and ent.IsPersistent and ent.PersistenceID then
-        RemoveEntityFromDB(ent)
-        print("[legendary_money_fabric] Entité " .. ent:GetClass() .. " supprimée de la base de données")
     end
-end)
+    
+    -- Vider la base de données
+    sql.Query("DELETE FROM lg_entity_positions")
+    
+    print("[legendary_money_fabric] Toutes les positions ont été supprimées")
+end
 
 -- Charger les entités au démarrage du serveur
 hook.Add("InitPostEntity", "LG_LoadPersistentEntities", function()
@@ -152,86 +134,97 @@ hook.Add("InitPostEntity", "LG_LoadPersistentEntities", function()
 end)
 
 -- Exposer les fonctions
-LegendaryMoneyFabric.Persistence.SaveEntity = SaveEntity
+LegendaryMoneyFabric.Persistence.SaveAllEntities = SaveAllEntities
 LegendaryMoneyFabric.Persistence.LoadAllEntities = LoadAllEntities
-LegendaryMoneyFabric.Persistence.ClearAllEntities = ClearAllEntities
-LegendaryMoneyFabric.Persistence.RemoveEntityFromDB = RemoveEntityFromDB
+LegendaryMoneyFabric.Persistence.DeleteAllPositions = DeleteAllPositions
 
--- Commandes admin
-concommand.Add("lg_reload_entities", function(ply, cmd, args)
-    if IsValid(ply) and not ply:IsAdmin() then
-        ply:ChatPrint("Vous devez être admin!")
-        return
-    end
+-- Commande !launderingsaveposition
+hook.Add("PlayerSay", "LG_LaunderingSaveCommand", function(ply, text)
+    local cmd = string.lower(text)
     
-    -- Supprimer toutes les entités persistantes actuelles
-    for _, ent in ipairs(ents.GetAll()) do
-        if IsValid(ent) and ent.IsPersistent then
-            ent:Remove()
+    if cmd == "!launderingsaveposition" then
+        if not ply:IsAdmin() then
+            DarkRP.notify(ply, 1, 5, "Vous devez être admin!")
+            return ""
         end
-    end
-    
-    -- Recharger
-    timer.Simple(0.5, function()
-        LoadAllEntities()
         
-        if IsValid(ply) then
-            ply:ChatPrint("[legendary_money_fabric] Entités rechargées!")
-        else
-            print("[legendary_money_fabric] Entités rechargées!")
+        local count = SaveAllEntities()
+        
+        DarkRP.notify(ply, 0, 5, count .. " entité(s) sauvegardée(s)!")
+        
+        -- Message en chat pour tous les admins
+        for _, admin in ipairs(player.GetAll()) do
+            if admin:IsAdmin() then
+                admin:ChatPrint("[Blanchiment] " .. ply:Nick() .. " a sauvegardé " .. count .. " entité(s)")
+            end
         end
-    end)
+        
+        return ""
+    end
+    
+    if cmd == "!launderingdeleteposition" then
+        if not ply:IsAdmin() then
+            DarkRP.notify(ply, 1, 5, "Vous devez être admin!")
+            return ""
+        end
+        
+        DeleteAllPositions()
+        
+        DarkRP.notify(ply, 1, 5, "Toutes les positions ont été supprimées!")
+        
+        -- Message en chat pour tous les admins
+        for _, admin in ipairs(player.GetAll()) do
+            if admin:IsAdmin() then
+                admin:ChatPrint("[Blanchiment] " .. ply:Nick() .. " a supprimé toutes les positions")
+            end
+        end
+        
+        return ""
+    end
 end)
 
-concommand.Add("lg_clear_entities", function(ply, cmd, args)
+-- Commandes console (au cas où)
+concommand.Add("lg_save_positions", function(ply, cmd, args)
     if IsValid(ply) and not ply:IsAdmin() then
         ply:ChatPrint("Vous devez être admin!")
         return
     end
     
-    -- Supprimer toutes les entités persistantes
-    for _, ent in ipairs(ents.GetAll()) do
-        if IsValid(ent) and ent.IsPersistent then
-            ent:Remove()
-        end
-    end
-    
-    ClearAllEntities()
+    local count = SaveAllEntities()
     
     if IsValid(ply) then
-        ply:ChatPrint("[legendary_money_fabric] Toutes les entités ont été supprimées!")
+        ply:ChatPrint("[legendary_money_fabric] " .. count .. " entité(s) sauvegardée(s)!")
     else
-        print("[legendary_money_fabric] Toutes les entités ont été supprimées!")
+        print("[legendary_money_fabric] " .. count .. " entité(s) sauvegardée(s)!")
     end
 end)
 
--- Commande pour lister les entités sauvegardées
-concommand.Add("lg_list_entities", function(ply, cmd, args)
+concommand.Add("lg_delete_positions", function(ply, cmd, args)
     if IsValid(ply) and not ply:IsAdmin() then
         ply:ChatPrint("Vous devez être admin!")
         return
     end
     
-    local result = sql.Query("SELECT * FROM lg_entity_positions")
+    DeleteAllPositions()
     
-    if not result then
-        if IsValid(ply) then
-            ply:ChatPrint("[legendary_money_fabric] Aucune entité sauvegardée")
-        else
-            print("[legendary_money_fabric] Aucune entité sauvegardée")
-        end
+    if IsValid(ply) then
+        ply:ChatPrint("[legendary_money_fabric] Toutes les positions ont été supprimées!")
+    else
+        print("[legendary_money_fabric] Toutes les positions ont été supprimées!")
+    end
+end)
+
+concommand.Add("lg_load_positions", function(ply, cmd, args)
+    if IsValid(ply) and not ply:IsAdmin() then
+        ply:ChatPrint("Vous devez être admin!")
         return
     end
     
+    local count = LoadAllEntities()
+    
     if IsValid(ply) then
-        ply:ChatPrint("[legendary_money_fabric] Entités sauvegardées:")
-        for _, row in ipairs(result) do
-            ply:ChatPrint("  - " .. row.entity_class .. " (ID: " .. row.id .. ")")
-        end
+        ply:ChatPrint("[legendary_money_fabric] " .. count .. " entité(s) chargée(s)!")
     else
-        print("[legendary_money_fabric] Entités sauvegardées:")
-        for _, row in ipairs(result) do
-            print("  - " .. row.entity_class .. " (ID: " .. row.id .. ")")
-        end
+        print("[legendary_money_fabric] " .. count .. " entité(s) chargée(s)!")
     end
 end)
